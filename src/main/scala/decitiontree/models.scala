@@ -14,7 +14,7 @@ case class Question(col: Int, value: Data)
 enum DecisionTree:
   case Leaf(predictions: Map[Label, Int])
 
-  case DecisionNode(
+  case Node(
       q: Question,
       trueBranch: DecisionTree,
       falseBranch: DecisionTree

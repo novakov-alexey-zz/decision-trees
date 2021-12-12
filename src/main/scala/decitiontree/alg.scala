@@ -90,12 +90,12 @@ private def buildTreeAsync(rows: Rows): Future[DecisionTree] =
       if gain == 0 then Future(leaf(rows))
       else
         // # If we reach here, we have found a useful feature / value to partition on.
-        println(s"buidling node for: $q")
+        println(s"buidling node for $q")
         val (trueRows, falseRows) = partition(rows, q)
         val trueBranch = buildTreeAsync(trueRows)
         val falseBranch = buildTreeAsync(falseRows)
         val branches = Future.sequence(List(trueBranch, falseBranch))
-        branches.map(list => DecisionNode(q, list.head, list.last))
+        branches.map(list => Node(q, list.head, list.last))
 
 extension (node: DecisionTree)
   def classify(input: Features): Map[String, Int] =
@@ -106,7 +106,7 @@ extension (node: DecisionTree)
     ): Map[String, Int] =
       node match
         case Leaf(predictions) => predictions
-        case DecisionNode(question, trueBranch, falseBranch) =>
+        case Node(question, trueBranch, falseBranch) =>
           if matches(question, input) then loop(input, trueBranch)
           else loop(input, falseBranch)
 
@@ -124,7 +124,7 @@ def printTree(
   node match
     case Leaf(predictions) =>
       println(spacing + "Predict: " + predictions)
-    case DecisionNode(question, trueBranch, falseBranch) =>
+    case Node(question, trueBranch, falseBranch) =>
       println(spacing + asString(question, header))
 
       println(spacing + "--> True:")
