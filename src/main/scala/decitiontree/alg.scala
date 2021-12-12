@@ -3,9 +3,17 @@ package decisiontree
 import DecisionTree._
 import Types._
 import scala.annotation.tailrec
+import scala.concurrent.Future
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import concurrent.ExecutionContext.Implicits.global
+
+// CART algorithm (classification and regression trees)
 
 object api:
-  export Types._
+  final type Row = decisiontree.Types.Row
+  final type Rows = decisiontree.Types.Rows
+  final type Data = decisiontree.Types.Data
   export decisiontree.buildTree
   export decisiontree.printTree
   export decisiontree.classify
@@ -62,7 +70,7 @@ def findBestSplit(rows: Rows): (Float, Option[Question]) =
 def leaf(data: Rows): Leaf =
   Leaf(classCounts(data))
 
-def matches(q: Question, example: Vector[Data]): Boolean =
+def matches(q: Question, example: Features): Boolean =
   val exampleVal = example(q.col)
   if isNumeric(exampleVal) then
     (exampleVal, q.value) match
@@ -72,23 +80,28 @@ def matches(q: Question, example: Vector[Data]): Boolean =
   else exampleVal == q.value
 
 def buildTree(rows: Rows): DecisionTree =
+  Await.result(buildTreeAsync(rows), 30.seconds)
+
+private def buildTreeAsync(rows: Rows): Future[DecisionTree] =
   val (gain, question) = findBestSplit(rows)
   question match
-    case None => leaf(rows)
+    case None => Future(leaf(rows))
     case Some(q) =>
-      if gain == 0 then leaf(rows)
+      if gain == 0 then Future(leaf(rows))
       else
         // # If we reach here, we have found a useful feature / value to partition on.
+        println(s"buidling node for: $q")
         val (trueRows, falseRows) = partition(rows, q)
-        val trueBranch = buildTree(trueRows)
-        val falseBranch = buildTree(falseRows)
-        DecisionNode(q, trueBranch, falseBranch)
+        val trueBranch = buildTreeAsync(trueRows)
+        val falseBranch = buildTreeAsync(falseRows)
+        val branches = Future.sequence(List(trueBranch, falseBranch))
+        branches.map(list => DecisionNode(q, list.head, list.last))
 
 extension (node: DecisionTree)
-  def classify(input: Vector[Data]): Map[String, Int] =
+  def classify(input: Features): Map[String, Int] =
     @tailrec
     def loop(
-        input: Vector[Data],
+        input: Features,
         node: DecisionTree
     ): Map[String, Int] =
       node match

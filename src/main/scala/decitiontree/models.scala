@@ -5,8 +5,9 @@ import Types._
 object Types:
   type Label = String
   type Data = Int | Float | String
-  type Features = Vector[Data]
-  type Rows = List[(Features, Label)]
+  type Features = Array[Data]
+  type Row = (Features, Label)
+  type Rows = Array[Row]
 
 case class Question(col: Int, value: Data)
 
