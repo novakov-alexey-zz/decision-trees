@@ -15,7 +15,6 @@ object api:
   final type Rows = decisiontree.Types.Rows
   final type Data = decisiontree.Types.Data
   export decisiontree.buildTree
-  export decisiontree.printTree
   export decisiontree.classify
 
 def uniqueVals(data: Rows, col: Int) =
@@ -115,20 +114,3 @@ extension (node: DecisionTree)
 def asString(q: Question, header: Array[String]) =
   val condition = if isNumeric(q.value) then ">=" else "=="
   s"Is ${header(q.col)} $condition ${q.value}"
-
-def printTree(
-    header: Array[String],
-    node: DecisionTree,
-    spacing: String = ""
-): Unit =
-  node match
-    case Leaf(predictions) =>
-      println(spacing + "Predict: " + predictions)
-    case Node(question, trueBranch, falseBranch) =>
-      println(spacing + asString(question, header))
-
-      println(spacing + "--> True:")
-      printTree(header, trueBranch, spacing + "  ")
-
-      println(spacing + "--> False:")
-      printTree(header, falseBranch, spacing + "  ")

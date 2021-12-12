@@ -3,18 +3,22 @@ import java.nio.file.Path
 import scala.io.Source
 import scala.util.Using
 
-case class TextData(data: Array[(Array[String], String)], header: Array[String])
+case class TextData(
+    data: Array[(Array[String], String)],
+    featureNames: Array[String],
+    variable: String
+)
 
-object TextLoader:
-  val defaultDelimiter: String = ","
+object DataLoader:
+  val defaultDelimiter = ","
 
-case class TextLoader(
+final case class DataLoader(
     path: Path,
     header: Boolean = true,
-    delimiter: String = TextLoader.defaultDelimiter
+    delimiter: String = DataLoader.defaultDelimiter
 ):
   def load(firtsCol: Int, lastCol: Int = -1): TextData =
-    val (names, data) =
+    val (namesRow, data) =
       Using.resource(Source.fromFile(path.toFile)) { s =>
         val lines = s.getLines()
         if header && lines.nonEmpty then
@@ -33,7 +37,10 @@ case class TextLoader(
       .map(_.split(delimiter))
       .map(arr => slice(arr) -> arr.last)
 
+    val names = namesRow.split(delimiter)
+
     TextData(
       rows,
-      slice(names.split(delimiter))
+      slice(names),
+      names.last
     )

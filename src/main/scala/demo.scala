@@ -1,6 +1,7 @@
 import decisiontree.api._
 import java.nio.file.Paths
 import decisiontree.DecisionTree
+import java.nio.file.Path
 
 @main def fruits =
   val header = Array("color", "diameter", "label")
@@ -13,7 +14,7 @@ import decisiontree.DecisionTree
   )
 
   val classifier = buildTree(trainingData)
-  printTree(header, classifier, "")
+  printer.toStdOut(header, classifier)
 
   def printLeaf(counts: Map[String, Int]) =
     val total = counts.values.sum.toFloat
@@ -60,7 +61,7 @@ def splitArray[T](
 
 @main def customerChurn =
   val textData =
-    TextLoader(Paths.get("data", "Churn_Modelling.csv")).load(3, -1)
+    DataLoader(Paths.get("data", "Churn_Modelling.csv")).load(3, -1)
   val rows =
     textData.data.map((features, label) =>
       Array[Data](
@@ -78,8 +79,16 @@ def splitArray[T](
     )
   val (trainData, testData) = splitArray(0.2, rows)
   val classifier = buildTree(trainData)
-  //println(s"printing tree...")
-  //printTree(textData.header, classifier, "")
-  //println(s"header: ${textData.header.mkString(",")}")
+
+  val names = printer.Names(
+    textData.featureNames,
+    Map("0" -> "No", "1" -> "Yes"),
+    textData.variable
+  )
+  printer.toJsonFile(
+    Path.of("output", "churn-modeling-tree.json"),
+    names,
+    classifier
+  )
   println(s"train accuracy: ${accuracy(classifier, trainData)} %")
   println(s"test accuracy: ${accuracy(classifier, testData)} %")
