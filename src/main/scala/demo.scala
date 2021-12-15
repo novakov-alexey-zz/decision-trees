@@ -39,17 +39,17 @@ import java.nio.file.Path
 
 def accuracy(
     classifier: DecisionTree,
-    testingData: Array[Row],
+    data: Array[Row],
     exactMatch: Boolean = false
 ) =
-  testingData.map { (input, label) =>
+  data.map { (input, label) =>
     val predictions = classifier.classify(input)
     if predictions.contains(label) then
       if predictions.size == 1 then 1f
       else if exactMatch then 0
       else 1f / predictions.size
     else 0
-  }.sum * 100 / testingData.size
+  }.sum * 100 / data.size
 
 def splitArray[T](
     fraction: Float,

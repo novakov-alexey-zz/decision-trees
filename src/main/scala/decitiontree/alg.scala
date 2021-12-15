@@ -88,7 +88,7 @@ private def buildTreeAsync(rows: Rows): Future[DecisionTree] =
     case Some(q) =>
       if gain == 0 then Future(leaf(rows))
       else
-        // # If we reach here, we have found a useful feature / value to partition on.
+        // If we reach here, we have found a useful feature / value to partition on.
         println(s"buidling node for $q")
         val (trueRows, falseRows) = partition(rows, q)
         val trueBranch = buildTreeAsync(trueRows)
