@@ -12,13 +12,9 @@ import concurrent.ExecutionContext.Implicits.global
 
 object api:
   final type Row = decisiontree.Types.Row
-  final type Rows = decisiontree.Types.Rows
   final type Data = decisiontree.Types.Data
   export decisiontree.buildTree
   export decisiontree.classify
-
-def uniqueVals(data: Rows, col: Int) =
-  data.map(_(col)).toSet
 
 def classCounts(rows: Rows): Map[String, Int] =
   rows.groupMapReduce(_._2)(_ => 1)(_ + _)
@@ -49,7 +45,7 @@ def findBestSplit(rows: Rows): (Float, Option[Question]) =
   val featureCount = rows.headOption.map(_._1.length - 1).getOrElse(0)
 
   for col <- 0 until featureCount do
-    val uniqueVals = rows.map((f, _) => f(col)).toSet
+    val uniqueVals = rows.map((row, _) => row(col)).toSet
 
     for value <- uniqueVals do
       val question = Question(col, value)
@@ -84,17 +80,17 @@ def buildTree(rows: Rows): DecisionTree =
 private def buildTreeAsync(rows: Rows): Future[DecisionTree] =
   val (gain, question) = findBestSplit(rows)
   question match
-    case None => Future(leaf(rows))
+    case None => Future.successful(leaf(rows))
     case Some(q) =>
-      if gain == 0 then Future(leaf(rows))
+      if gain == 0 then Future.successful(leaf(rows))
       else
         // If we reach here, we have found a useful feature / value to partition on.
         println(s"buidling node for $q")
-        val (trueRows, falseRows) = partition(rows, q)
-        val trueBranch = buildTreeAsync(trueRows)
-        val falseBranch = buildTreeAsync(falseRows)
-        val branches = Future.sequence(List(trueBranch, falseBranch))
-        branches.map(list => Node(q, list.head, list.last))
+        for
+          (trueRows, falseRows) <- Future(partition(rows, q))
+          trueBranch <- buildTreeAsync(trueRows)
+          falseBranch <- buildTreeAsync(falseRows)
+        yield Node(q, trueBranch, falseBranch)
 
 extension (node: DecisionTree)
   def classify(input: Features): Map[String, Int] =
